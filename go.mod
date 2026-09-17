@@ -1,4 +1,4 @@
-module github.com/mehdi-shokohi/gollama
+module github.com/mehdi-shokohi/gollama.cu
 
 go 1.27
 

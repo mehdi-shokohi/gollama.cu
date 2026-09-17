@@ -10,9 +10,9 @@ import (
 
 	"github.com/eitamring/gocudrv/cuda"
 
-	"github.com/mehdi-shokohi/gollama/f16"
-	"github.com/mehdi-shokohi/gollama/gguf"
-	"github.com/mehdi-shokohi/gollama/kernels"
+	"github.com/mehdi-shokohi/gollama.cu/f16"
+	"github.com/mehdi-shokohi/gollama.cu/gguf"
+	"github.com/mehdi-shokohi/gollama.cu/kernels"
 )
 
 //go:embed kernels.ptx

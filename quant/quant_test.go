@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/mehdi-shokohi/gollama/f16"
-	"github.com/mehdi-shokohi/gollama/gguf"
+	"github.com/mehdi-shokohi/gollama.cu/f16"
+	"github.com/mehdi-shokohi/gollama.cu/gguf"
 )
 
 // Llama32_3B is the Llama 3.2 3B Instruct blob of the local ollama store;

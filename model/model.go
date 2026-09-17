@@ -10,10 +10,10 @@ import (
 
 	"github.com/eitamring/gocudrv/cuda"
 
-	"github.com/mehdi-shokohi/gollama/backend/gpu"
-	"github.com/mehdi-shokohi/gollama/f16"
-	"github.com/mehdi-shokohi/gollama/gguf"
-	"github.com/mehdi-shokohi/gollama/quant"
+	"github.com/mehdi-shokohi/gollama.cu/backend/gpu"
+	"github.com/mehdi-shokohi/gollama.cu/f16"
+	"github.com/mehdi-shokohi/gollama.cu/gguf"
+	"github.com/mehdi-shokohi/gollama.cu/quant"
 )
 
 // Config is the llama hyper-parameter set read from the GGUF metadata.

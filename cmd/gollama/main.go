@@ -10,8 +10,8 @@ import (
 	"os"
 	"sort"
 
-	"github.com/mehdi-shokohi/gollama/gguf"
-	"github.com/mehdi-shokohi/gollama/ollama"
+	"github.com/mehdi-shokohi/gollama.cu/gguf"
+	"github.com/mehdi-shokohi/gollama.cu/ollama"
 )
 
 func main() {

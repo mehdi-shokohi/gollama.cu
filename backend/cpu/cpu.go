@@ -7,9 +7,9 @@ package cpu
 import (
 	"math"
 
-	"github.com/mehdi-shokohi/gollama/f16"
-	"github.com/mehdi-shokohi/gollama/gguf"
-	"github.com/mehdi-shokohi/gollama/quant"
+	"github.com/mehdi-shokohi/gollama.cu/f16"
+	"github.com/mehdi-shokohi/gollama.cu/gguf"
+	"github.com/mehdi-shokohi/gollama.cu/quant"
 )
 
 // RMSNorm normalises each of the rows of n elements of x by its RMS and

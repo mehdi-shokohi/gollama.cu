@@ -14,7 +14,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/mehdi-shokohi/gollama/gguf"
+	"github.com/mehdi-shokohi/gollama.cu/gguf"
 )
 
 // Token types of tokenizer.ggml.token_type (llama.cpp's llama_token_attr).

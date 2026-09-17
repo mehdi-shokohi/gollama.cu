@@ -1,7 +1,8 @@
-# gollama — llama inference and training in Go, kernels included
+# gollama.cu — llama inference and training in Go, kernels included
 
-`gollama` runs (and fine-tunes) llama-architecture models from GGUF files on NVIDIA GPUs.
-There is no C or C++ anywhere in the tree: the host is Go, the **GPU kernels are Go** too,
+`gollama.cu` runs (and fine-tunes) llama-architecture models from GGUF files on NVIDIA GPUs.
+The name is the pitch — llama.cpp, but Go, with the `.cu` part in Go as well. There is no C
+or C++ anywhere in the tree: the host is Go, the **GPU kernels are Go** too,
 compiled to PTX by [cuda-ir.go](https://github.com/mehdi-shokohi/cuda-ir.go), and the CUDA
 driver is reached through [gocudrv](https://github.com/eitamring/gocudrv) with
 `CGO_ENABLED=0`. The result is one static binary.

@@ -1,4 +1,4 @@
-# gollama tutorials
+# gollama.cu tutorials
 
 These pages explain what happens when a language model generates text, using this
 repository as the worked example. Every concept points at the Go code that implements it,

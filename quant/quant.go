@@ -17,8 +17,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/mehdi-shokohi/gollama/f16"
-	"github.com/mehdi-shokohi/gollama/gguf"
+	"github.com/mehdi-shokohi/gollama.cu/f16"
+	"github.com/mehdi-shokohi/gollama.cu/gguf"
 )
 
 func half(b []byte) float32 { return f16.Half(binary.LittleEndian.Uint16(b)).Float32() }

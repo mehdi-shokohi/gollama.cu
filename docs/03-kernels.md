@@ -180,6 +180,7 @@ twin and its test.
 ```
 .visible .entry MatVecQ4K(              the kernel and its parameter list
 .shared .align 16 .b8 …scratch[32];    static shared memory (must not be .global!)
+                                       (names are the mangled Go path: github_com_mehdi_shokohi_gollama_cu_kernels_…)
 .extern .shared … scores[];            dynamic shared memory, sized at launch
 shfl.sync.bfly.b32                     a warp shuffle (warpSum)
 bar.sync 0;                            cuda.SyncThreads

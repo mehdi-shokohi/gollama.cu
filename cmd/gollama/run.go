@@ -11,11 +11,11 @@ import (
 
 	"github.com/eitamring/gocudrv/cuda"
 
-	"github.com/mehdi-shokohi/gollama/backend/gpu"
-	"github.com/mehdi-shokohi/gollama/gguf"
-	"github.com/mehdi-shokohi/gollama/model"
-	"github.com/mehdi-shokohi/gollama/ollama"
-	"github.com/mehdi-shokohi/gollama/tokenizer"
+	"github.com/mehdi-shokohi/gollama.cu/backend/gpu"
+	"github.com/mehdi-shokohi/gollama.cu/gguf"
+	"github.com/mehdi-shokohi/gollama.cu/model"
+	"github.com/mehdi-shokohi/gollama.cu/ollama"
+	"github.com/mehdi-shokohi/gollama.cu/tokenizer"
 )
 
 func run(args []string) error {

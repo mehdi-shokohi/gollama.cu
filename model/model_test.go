@@ -10,11 +10,11 @@ import (
 
 	"github.com/eitamring/gocudrv/cuda"
 
-	"github.com/mehdi-shokohi/gollama/backend/cpu"
-	"github.com/mehdi-shokohi/gollama/backend/gpu"
-	"github.com/mehdi-shokohi/gollama/gguf"
-	"github.com/mehdi-shokohi/gollama/ollama"
-	"github.com/mehdi-shokohi/gollama/quant"
+	"github.com/mehdi-shokohi/gollama.cu/backend/cpu"
+	"github.com/mehdi-shokohi/gollama.cu/backend/gpu"
+	"github.com/mehdi-shokohi/gollama.cu/gguf"
+	"github.com/mehdi-shokohi/gollama.cu/ollama"
+	"github.com/mehdi-shokohi/gollama.cu/quant"
 )
 
 func setup(t *testing.T, name string) (*gguf.File, *cuda.Context, *gpu.Kernels) {

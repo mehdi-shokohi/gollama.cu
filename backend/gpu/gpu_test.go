@@ -8,9 +8,9 @@ import (
 
 	"github.com/eitamring/gocudrv/cuda"
 
-	"github.com/mehdi-shokohi/gollama/backend/cpu"
-	"github.com/mehdi-shokohi/gollama/f16"
-	"github.com/mehdi-shokohi/gollama/gguf"
+	"github.com/mehdi-shokohi/gollama.cu/backend/cpu"
+	"github.com/mehdi-shokohi/gollama.cu/f16"
+	"github.com/mehdi-shokohi/gollama.cu/gguf"
 )
 
 // Every kernel is checked against its backend/cpu twin on random data.
