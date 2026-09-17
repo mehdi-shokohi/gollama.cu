@@ -163,8 +163,8 @@ func cudairVersion() string {
 	return "latest"
 }
 
-// cudairDir is the source directory of cuda-ir.go: the local checkout when
-// a go.work points at one, else the module cache (downloaded if needed).
+// cudairDir is the source directory of cuda-ir.go in the module cache
+// (downloaded if needed).
 func cudairDir() (string, error) {
 	var mod struct{ Dir string }
 	if out, err := exec.Command("go", "list", "-m", "-json", cudairModule).Output(); err == nil {
