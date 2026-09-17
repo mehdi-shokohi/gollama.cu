@@ -72,12 +72,14 @@ both on random rows and compares.
 
 ## Building
 
-Needs the cuda-ir.go toolchain only to *regenerate* kernels (`make gen`); the PTX is
-committed, so building and running the command needs just Go and an NVIDIA driver.
+Running needs **Go 1.27+ and the NVIDIA driver** — nothing else: the kernels are committed
+as PTX (`backend/gpu/kernels.ptx`) and embedded, and the driver JITs them for your GPU.
 
 ```bash
-make test          # unit tests + kernels vs CPU oracle on the GPU
+git clone https://github.com/mehdi-shokohi/gollama.cu.git && cd gollama.cu
+make doctor        # driver, GPU, embedded kernels, model store — with a fix for each miss
 make build         # ./gollama
+make test          # unit tests + kernels vs CPU oracle on the GPU
 ./gollama info model.gguf
 ./gollama run llama3.2 -p "Why is the sky blue?"          # a model name from the ollama store
 ./gollama run -m model.gguf -p "..." -n 64 -raw            # any llama-architecture GGUF
@@ -91,6 +93,15 @@ outputs). `-v` prints the config and token ids.
 
 Phase 1 is decode-only — the prompt is fed one token at a time — and runs at ~52 tok/s on
 the 3B and ~9.5 tok/s on the 8B on an RTX 5060 Laptop.
+
+### Changing the kernels
+
+Only if you edit `kernels/`: `make gen` recompiles them to PTX with `gocuda`, which needs
+the [cuda-ir.go](https://github.com/mehdi-shokohi/cuda-ir.go) toolchain (LLVM 22, llgo).
+`make deps` clones cuda-ir.go next to this checkout and runs its `install.sh` (it asks
+before anything needing `sudo`), then writes a `go.work` so the kernels compile against
+that checkout; `make doctor` reports the toolchain state via `gocuda doctor`. Commit the
+regenerated `kernels.ptx` with the kernel change.
 
 ## License
 

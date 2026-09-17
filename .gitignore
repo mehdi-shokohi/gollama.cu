@@ -2,5 +2,6 @@
 *.ll
 /gollama
 CLAUDE.md
-.gitignorego.work
+.gitignore
+go.work
 go.work.sum
