@@ -1,8 +1,11 @@
-# Running models needs Go 1.27+ and the NVIDIA driver: `make build`, `make doctor`.
-# Regenerating the kernels (make gen) also needs the cuda-ir.go toolchain (LLVM 22,
-# llgo, gocuda), which `make deps` installs into the directory next to this one.
-CUDAIR   ?= $(abspath ../cuda-ir.go)
+# Running models needs Go 1.27+ and the NVIDIA driver. Editing kernels/ also needs the
+# cuda-ir.go toolchain (LLVM 22, llgo, gocuda): `make doctor` reports both tiers and
+# `make deps` installs the toolchain (cuda-ir.go's install.sh, run from the module cache).
+ifneq (,$(wildcard ../llgo/go.mod))
 LLGO_ROOT ?= $(abspath ../llgo)
+else
+LLGO_ROOT ?= $(HOME)/llgo
+endif
 export LLGO_ROOT
 export CGO_ENABLED = 0
 
@@ -17,21 +20,17 @@ build:      ## the gollama command, a static binary
 run: build  ## generate: make run MODEL=llama3.1 PROMPT="..."
 	./gollama run $(MODEL) -p "$(PROMPT)"
 
-doctor:     ## check the driver, the GPU, the embedded kernels, the model store, the kernel toolchain
+doctor:     ## driver, GPU, embedded kernels, models; then the kernel toolchain (llgen, LLVM, gocuda, libdevice)
 	go run ./cmd/gollama doctor
 
 test:       ## unit tests + every kernel against its CPU twin on the GPU (model tests skip without models)
 	go test -count=1 ./...
 
-gen:        ## recompile the Go kernels to PTX (needs gocuda from cuda-ir.go on PATH)
+gen:        ## recompile the Go kernels to PTX (needs the toolchain: make deps)
 	go generate ./kernels
 
-deps:       ## install the kernel toolchain: clones cuda-ir.go next to this checkout and runs its install.sh
-	@test -d $(CUDAIR) || git clone https://github.com/mehdi-shokohi/cuda-ir.go.git $(CUDAIR)
-	cd $(CUDAIR) && ./install.sh
-	@echo "toolchain installed; 'go.work' lets 'make gen' compile against $(CUDAIR):"
-	@test -f go.work || go work init . $(CUDAIR)
-	$(MAKE) doctor
+deps:       ## install the kernel toolchain: LLVM 22, llgo + llgen, gocuda (asks before sudo)
+	go run ./cmd/gollama doctor -install
 
 clean:
 	rm -f gollama

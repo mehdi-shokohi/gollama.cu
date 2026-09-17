@@ -77,7 +77,7 @@ as PTX (`backend/gpu/kernels.ptx`) and embedded, and the driver JITs them for yo
 
 ```bash
 git clone https://github.com/mehdi-shokohi/gollama.cu.git && cd gollama.cu
-make doctor        # driver, GPU, embedded kernels, model store — with a fix for each miss
+make doctor        # driver, GPU, embedded kernels, models, kernel toolchain — with a fix for each miss
 make build         # ./gollama
 make test          # unit tests + kernels vs CPU oracle on the GPU
 ./gollama info model.gguf
@@ -97,11 +97,17 @@ the 3B and ~9.5 tok/s on the 8B on an RTX 5060 Laptop.
 ### Changing the kernels
 
 Only if you edit `kernels/`: `make gen` recompiles them to PTX with `gocuda`, which needs
-the [cuda-ir.go](https://github.com/mehdi-shokohi/cuda-ir.go) toolchain (LLVM 22, llgo).
-`make deps` clones cuda-ir.go next to this checkout and runs its `install.sh` (it asks
-before anything needing `sudo`), then writes a `go.work` so the kernels compile against
-that checkout; `make doctor` reports the toolchain state via `gocuda doctor`. Commit the
-regenerated `kernels.ptx` with the kernel change.
+the [cuda-ir.go](https://github.com/mehdi-shokohi/cuda-ir.go) toolchain. The Go part is
+already in your module cache (`go.mod` pins cuda-ir.go); the rest — LLVM 22, a clone of
+[llgo](https://github.com/xgo-dev/llgo) for `llgen`, the `gocuda` command — is installed by
+
+```bash
+gollama doctor -install    # = make deps; runs cuda-ir.go's install.sh from the module cache, asks before sudo
+gollama doctor             # reports both tiers: what running needs, then the kernel toolchain
+```
+
+`LLGO_ROOT` must point at the llgo clone (`install.sh` adds it to your shell profile; the
+Makefile also accepts `../llgo`). Commit the regenerated `kernels.ptx` with the kernel change.
 
 ## License
 
