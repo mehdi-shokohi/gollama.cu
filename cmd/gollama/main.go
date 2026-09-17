@@ -3,6 +3,7 @@
 //
 //	gollama info model.gguf|llama3.2        print the metadata and tensor table
 //	gollama run llama3.2 -p "prompt" -n 64  generate greedily on the GPU
+//	gollama doctor                          check the driver, the GPU, the models, the toolchain
 package main
 
 import (
@@ -24,6 +25,8 @@ func main() {
 		err = info(os.Args[2:])
 	case "run":
 		err = run(os.Args[2:])
+	case "doctor":
+		err = doctor(os.Args[2:])
 	default:
 		usage()
 	}
@@ -34,7 +37,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: gollama info <model.gguf|ollama name>\n       gollama run <model> -p <prompt> [-n tokens] (see gollama run -h)")
+	fmt.Fprintln(os.Stderr, "usage: gollama info <model.gguf|ollama name>\n       gollama run <model> -p <prompt> [-n tokens] (see gollama run -h)\n       gollama doctor")
 	os.Exit(2)
 }
 

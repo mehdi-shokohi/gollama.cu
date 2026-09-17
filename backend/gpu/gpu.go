@@ -49,6 +49,9 @@ func Load(ctx *cuda.Context) (*Kernels, error) {
 	return k, nil
 }
 
+// Len is the number of kernels in the module.
+func (k *Kernels) Len() int { return len(k.fn) }
+
 // Close unloads the module.
 func (k *Kernels) Close() error { return k.mod.Close() }
 

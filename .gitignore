@@ -1,0 +1,6 @@
+*.gguf
+*.ll
+/gollama
+CLAUDE.md
+.gitignorego.work
+go.work.sum
