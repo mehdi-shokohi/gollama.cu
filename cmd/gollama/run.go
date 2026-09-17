@@ -24,7 +24,7 @@ func run(args []string) error {
 	prompt := fs.String("p", "", "the prompt")
 	system := fs.String("system", "", "system prompt (chat mode)")
 	raw := fs.Bool("raw", false, "no chat template: BOS + prompt")
-	n := fs.Int("n", 128, "maximum tokens to generate")
+	n := fs.Int("n", 0, "maximum tokens to generate (0 = until the KV cache is full)")
 	ctxLen := fs.Int("ctx", 2048, "KV cache length (0 = the model's context length)")
 	verbose := fs.Bool("v", false, "print the model config and token ids to stderr")
 	fs.Usage = func() {
@@ -93,8 +93,14 @@ func run(args []string) error {
 	if *verbose {
 		fmt.Fprintf(os.Stderr, "prompt: %d tokens %v\n", len(ids), ids)
 	}
+	if *n <= 0 {
+		*n = m.MaxLen - len(ids)
+	}
 	if len(ids)+*n > m.MaxLen {
 		return fmt.Errorf("prompt (%d) + generation (%d) exceeds the %d-token cache; raise -ctx", len(ids), *n, m.MaxLen)
+	}
+	if *n == 0 {
+		return fmt.Errorf("prompt (%d) fills the %d-token cache; raise -ctx", len(ids), m.MaxLen)
 	}
 	stop := map[int32]bool{tk.EOS: true}
 	if id := tk.ID("<|end_of_text|>"); id >= 0 {
@@ -122,7 +128,7 @@ func run(args []string) error {
 		generated++
 		out.Write(tk.Piece(next))
 		if *verbose {
-			fmt.Fprintf(os.Stderr, "[%d]", next)
+			fmt.Fprintf(os.Stderr, "[%d]\n", next)
 		}
 		if logits, err = m.Forward(ctx, next, pos); err != nil {
 			return err
