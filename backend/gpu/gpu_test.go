@@ -91,20 +91,24 @@ func assertClose(t *testing.T, name string, got, want []float32, atol, rtol floa
 func TestRMSNorm(t *testing.T) {
 	k, ctx := setup(t)
 	rng := rand.New(rand.NewSource(1))
-	const rows, n = 7, 2048 // TinyLlama's hidden size, an odd number of rows
-	x, w := randf(rng, rows*n, 3), randf(rng, n, 1)
-	want := make([]float32, rows*n)
-	cpu.RMSNorm(x, w, want, rows, n, 1e-5)
-	dx, dw, dout := upload(t, k, x), upload(t, k, w), upload(t, k, make([]float32, rows*n))
-	if err := k.RMSNorm(ctx, nil, dx, dw, dout, rows, n, 1e-5); err != nil {
-		t.Fatal(err)
+	// an odd number of rows, then enough concurrent blocks to expose a
+	// block reduction whose scratch is not per block (it was once .global)
+	for _, rows := range []int{7, 1024} {
+		const n = 2048
+		x, w := randf(rng, rows*n, 3), randf(rng, n, 1)
+		want := make([]float32, rows*n)
+		cpu.RMSNorm(x, w, want, rows, n, 1e-5)
+		dx, dw, dout := upload(t, k, x), upload(t, k, w), upload(t, k, make([]float32, rows*n))
+		if err := k.RMSNorm(ctx, nil, dx, dw, dout, rows, n, 1e-5); err != nil {
+			t.Fatal(err)
+		}
+		assertClose(t, "RMSNorm", download(t, k, dout), want, 1e-5, 1e-4)
+		// in place
+		if err := k.RMSNorm(ctx, nil, dx, dw, dx, rows, n, 1e-5); err != nil {
+			t.Fatal(err)
+		}
+		assertClose(t, "RMSNorm(in place)", download(t, k, dx), want, 1e-5, 1e-4)
 	}
-	assertClose(t, "RMSNorm", download(t, k, dout), want, 1e-5, 1e-4)
-	// in place
-	if err := k.RMSNorm(ctx, nil, dx, dw, dx, rows, n, 1e-5); err != nil {
-		t.Fatal(err)
-	}
-	assertClose(t, "RMSNorm(in place)", download(t, k, dx), want, 1e-5, 1e-4)
 }
 
 func TestSoftmax(t *testing.T) {
@@ -261,11 +265,15 @@ func TestMatVecQuant(t *testing.T) {
 func TestAttnDecode(t *testing.T) {
 	k, ctx := setup(t)
 	rng := rand.New(rand.NewSource(7))
-	const nHeads, nKV, headDim = 6, 2, 64 // GQA group 3
-	for _, kvLen := range []int{1, 7, 256, 1000} {
+	for _, sh := range []struct{ nHeads, nKV, headDim, kvLen int }{
+		{6, 2, 64, 1}, {6, 2, 64, 7}, {6, 2, 64, 256}, {6, 2, 64, 1000}, // GQA group 3
+		{32, 8, 128, 1}, {32, 8, 128, 300}, // Llama 3.1 8B: 32 racing blocks
+		{24, 8, 128, 33}, // Llama 3.2 3B
+	} {
+		nHeads, nKV, headDim, kvLen := sh.nHeads, sh.nKV, sh.headDim, sh.kvLen
 		q := randf(rng, nHeads*headDim, 1)
 		kc, vc := randf(rng, kvLen*nKV*headDim, 1), randf(rng, kvLen*nKV*headDim, 1)
-		scale := float32(1 / math.Sqrt(headDim))
+		scale := float32(1 / math.Sqrt(float64(headDim)))
 		want := make([]float32, nHeads*headDim)
 		cpu.AttnDecode(q, kc, vc, want, kvLen, nHeads, nKV, headDim, scale)
 		dq, dk, dv, dout := upload(t, k, q), upload(t, k, kc), upload(t, k, vc), upload(t, k, make([]float32, nHeads*headDim))

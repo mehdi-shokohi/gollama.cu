@@ -13,15 +13,18 @@ same language handles the model, the tokenizer, the batching scheduler and the H
 
 ## Status
 
-Phase 0 of the plan below is done.
+Phases 0 and 1 are done: `gollama run` generates text from Llama 3.2 3B and Llama 3.1 8B
+(Q4_K_M and Q4_0 GGUF files from the ollama store) and reproduces `ollama`'s greedy output.
+The detailed plan for what comes next is in [ROADMAP.md](ROADMAP.md); the tutorials in
+[docs/](docs/) explain what is implemented and why.
 
 | Phase | Deliverable | Proof |
 |---|---|---|
 | **0** ✅ | GGUF reader/writer, first kernels, CPU oracle, test harness | `make test`: every kernel vs its CPU twin on the GPU |
-| 1 | Q4_K_M forward pass, greedy decoding (Llama 3.2 3B Instruct) | same greedy tokens as `ollama` (temperature 0) on a fixed prompt |
-| 2 | `Q4_0`, `Q8_0`, f16 weights; other llama-family models | same check on those files |
-| 3 | serving: KV cache, continuous batching, streaming HTTP | tokens/s scales with concurrent clients |
-| 4 | speed: tensor-core GEMM, fused RMSNorm+matmul, tiled attention | tokens/s vs llama.cpp on the same GPU |
+| **1** ✅ | Q4_K / Q6_K / Q4_0 forward pass, KV cache, BPE tokenizer, greedy decoding | same greedy tokens as `ollama` (temperature 0): 40/40 on the 3B, 40 then a near-tie on the 8B; GPU logits vs a pure-Go forward pass to 4e-6 |
+| 2 | batched prefill, sampling, more quant types, chat | prompt tokens/s ×10; same checks on `Q8_0` / `Q5_K` / f16 files |
+| 3 | serving: paged KV cache, continuous batching, streaming HTTP | tokens/s scales with concurrent clients |
+| 4 | speed: tensor-core GEMM, fused kernels, tiled attention | tokens/s vs llama.cpp on the same GPU |
 | 5 | training: LoRA fine-tune, then full fine-tune | gradient check vs finite differences; loss curve |
 
 ## Layout
@@ -33,10 +36,14 @@ quant/       host dequantization of Q8_0/Q4_0/Q4_K/Q6_K: the oracle for the GPU 
 kernels/     the GPU kernels, in Go  ->  go generate  ->  backend/gpu/kernels.ptx
 backend/cpu  pure-Go twin of every kernel: the test oracle and the no-GPU fallback
 backend/gpu  loads the embedded PTX, typed launch wrappers over gocudrv
-cmd/gollama  the command (info | run | serve | train)
+tokenizer/   byte-level BPE (llama 3 / gpt2 style) with the llama-bpe pre-tokenizer
+model/       config from GGUF metadata, weight upload, KV cache, the per-token forward pass
+ollama/      resolves "llama3.1" / a manifest to the GGUF blob in the ollama store
+cmd/gollama  the command (info | run; serve and train come with later phases)
+docs/        tutorials: GGUF, the inference pass, the kernels, the tokenizer, training
 ```
 
-Coming with the phases: `tensor/`, `tokenizer/`, `model/`, `kvcache/`, `engine/`, `server/`, `train/`.
+Coming with the phases: `sampler/`, `kvcache/`, `engine/`, `server/`, `train/`.
 
 ## A kernel
 
@@ -71,7 +78,18 @@ committed, so building and running the command needs just Go and an NVIDIA drive
 make test          # unit tests + kernels vs CPU oracle on the GPU
 make build         # ./gollama
 ./gollama info model.gguf
+./gollama run llama3.2 -p "Why is the sky blue?"          # a model name from the ollama store
+./gollama run -m model.gguf -p "..." -n 64 -raw            # any llama-architecture GGUF
 ```
+
+`run` accepts a GGUF path, an ollama manifest, or an ollama model name (`llama3.1`,
+`llama3.2:3b`; the store is `$OLLAMA_MODELS` or `~/.ollama/models`). It applies the llama 3
+chat template unless `-raw` is given; `-system` adds a system turn (ollama's `llama3.2`
+template always sends `"Cutting Knowledge Date: December 2023\n\n"`, pass that to compare
+outputs). `-v` prints the config and token ids.
+
+Phase 1 is decode-only — the prompt is fed one token at a time — and runs at ~52 tok/s on
+the 3B and ~9.5 tok/s on the 8B on an RTX 5060 Laptop.
 
 ## License
 

@@ -1,7 +1,7 @@
 // Command gollama runs llama-architecture models from GGUF files on
 // NVIDIA GPUs with kernels written in Go.
 //
-//	gollama info model.gguf                 print the metadata and tensor table
+//	gollama info model.gguf|llama3.2        print the metadata and tensor table
 //	gollama run llama3.2 -p "prompt" -n 64  generate greedily on the GPU
 package main
 
@@ -11,6 +11,7 @@ import (
 	"sort"
 
 	"github.com/mehdi-shokohi/gollama/gguf"
+	"github.com/mehdi-shokohi/gollama/ollama"
 )
 
 func main() {
@@ -33,7 +34,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: gollama info <model.gguf>\n       gollama run <model> -p <prompt> [-n tokens] (see gollama run -h)")
+	fmt.Fprintln(os.Stderr, "usage: gollama info <model.gguf|ollama name>\n       gollama run <model> -p <prompt> [-n tokens] (see gollama run -h)")
 	os.Exit(2)
 }
 
@@ -41,13 +42,17 @@ func info(args []string) error {
 	if len(args) != 1 {
 		usage()
 	}
-	f, err := gguf.Open(args[0])
+	path, err := ollama.Resolve(args[0])
+	if err != nil {
+		return err
+	}
+	f, err := gguf.Open(path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	fmt.Printf("%s: GGUF v%d, alignment %d, %d keys, %d tensors\n\n", args[0], f.Version, f.Alignment, len(f.Keys), len(f.Tensors))
+	fmt.Printf("%s: GGUF v%d, alignment %d, %d keys, %d tensors\n\n", path, f.Version, f.Alignment, len(f.Keys), len(f.Tensors))
 	for _, k := range f.Keys {
 		v := f.KV[k]
 		fmt.Printf("  %-45s %-8s %s\n", k, v.Type, truncate(v.String(), 60))
