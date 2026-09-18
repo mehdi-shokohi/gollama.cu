@@ -23,7 +23,7 @@ The detailed plan for what comes next is in [ROADMAP.md](ROADMAP.md); the tutori
 |---|---|---|
 | **0** ✅ | GGUF reader/writer, first kernels, CPU oracle, test harness | `make test`: every kernel vs its CPU twin on the GPU |
 | **1** ✅ | Q4_K / Q6_K / Q4_0 forward pass, KV cache, BPE tokenizer, greedy decoding | same greedy tokens as `ollama` (temperature 0): 40/40 on the 3B, 40 then a near-tie on the 8B; GPU logits vs a pure-Go forward pass to 4e-6 |
-| 2 | batched prefill, sampling, more quant types, chat | prompt tokens/s ×10; same checks on `Q8_0` / `Q5_K` / f16 files |
+| 2 | batched prefill, sampling, more quant types, chat, a reasoning model (DeepSeek-R1 distill) | prompt tokens/s ×10; same checks on `Q8_0` / `Q5_K` / f16 files |
 | 3 | serving: paged KV cache, continuous batching, streaming HTTP | tokens/s scales with concurrent clients |
 | 4 | speed: tensor-core GEMM, fused kernels, tiled attention | tokens/s vs llama.cpp on the same GPU |
 | 5 | training: LoRA fine-tune, then full fine-tune | gradient check vs finite differences; loss curve |

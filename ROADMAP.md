@@ -48,13 +48,33 @@ Goal: prompts processed in one pass, real sampling, more files run.
    llama-family blob runs (`gollama info` on all local blobs → all types covered).
 4. **Chat.** `gollama chat`: multi-turn REPL reusing the KV cache across turns, streaming
    pieces as they decode, `<|eot_id|>` handling, the ollama/HF chat template read from
-   `tokenizer.chat_template` (a small Jinja subset, or hard-coded llama 3 + a flag).
+   `tokenizer.chat_template`: a `chat/` package with per-family Go renderers selected by
+   fingerprinting the template text (`<|start_header_id|>` → llama 3, `<think>` → DeepSeek /
+   Qwen3), not a Jinja interpreter. Item 7 builds on this.
 5. **Streams and pipelining.** Move launches onto a non-blocking stream, pinned host
    buffers for the embedding row and the logits, overlap the host argmax with the next
    layer. Proof: decode tok/s on the 3B measurably up; tests still green.
 6. **Model zoo.** Other architectures that are "llama with a twist": Mistral (sliding
-   window), Qwen2 (QKV bias), Gemma (GeLU, embedding scaling, logit soft-cap), Phi-3. Each
-   is a `model.Arch` switch, not a new package.
+   window), Qwen2 (QKV bias), Qwen3 (Q/K RMSNorm, no bias), Gemma (GeLU, embedding scaling,
+   logit soft-cap), Phi-3. Each is a `model.Arch` switch, not a new package.
+7. **A reasoning model.** GGUF has no "reasoning" flag: a thinking model is an ordinary
+   model whose `tokenizer.chat_template` opens the assistant turn with `<think>` and whose
+   vocabulary has `<think>`/`</think>` as control tokens. Runtimes (llama.cpp
+   `common/chat.cpp`, ollama's renderers/parsers) fingerprint the template text to pick a
+   renderer and an output parser; we do the same.
+   - Target 1: **DeepSeek-R1-Distill-Llama-8B** (`general.architecture = llama`, so it runs
+     today with `-raw`). Needs: the DeepSeek template
+     (`<｜begin▁of▁sentence｜><｜User｜>{prompt}<｜Assistant｜><think>\n`), stop on its EOS
+     (`<｜end▁of▁sentence｜>`), and a streaming splitter in `cmd/gollama` that routes tokens
+     between `tk.ID("<think>")` and `tk.ID("</think>")` to a reasoning channel (stderr /
+     `-show-thinking`; later the `reasoning_content` field of the Phase 3 API).
+   - Target 2: **Qwen3** (4B/8B) once item 6 lands: same splitter, plus "thinking off" by
+     pre-seeding `<think>\n\n</think>\n\n` into the assistant turn, as its template does.
+   - gpt-oss (MoE, MXFP4, harmony `<|channel|>` format) and DeepSeek-V3/R1 proper (MLA + MoE)
+     are out of scope until Phase 4 has MoE/GEMM kernels.
+   - Proof: greedy output identical to `ollama run deepseek-r1:8b` (temperature 0) on a
+     math prompt, thinking and answer separated the same way; `TestChatTemplate` renders
+     the llama 3, DeepSeek and Qwen3 templates from fixture GGUF metadata.
 
 ### Phase 3 — serving
 
