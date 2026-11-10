@@ -1,0 +1,68 @@
+name: GPU kernel tests (simulated H100)
+
+# Optional, non-required check. The hosted runners have no GPU, so this runs
+# `go test ./...` on a simulated NVIDIA H100
+# (https://github.com/pantheongpu/pantheonsim). That includes the backend/gpu
+# tests, which compare every GPU kernel with its backend/cpu twin and skip
+# with "no CUDA" when there is no device. A simulator cannot reproduce
+# hardware-specific behavior or timing, so it complements real-GPU testing and
+# does not replace it.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "**/*.go"
+      - "backend/gpu/kernels.ptx"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/gpu-sim.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Go tests on simulated H100
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # No cgo and no CUDA toolkit are needed: gocudrv loads libcuda at run time
+      # (purego), and `vgpu run` puts the simulator's libcuda in front of the
+      # loader path. The checked-in PTX (backend/gpu/kernels.ptx, .target sm_80)
+      # is loaded as is.
+      - name: Set up the simulated GPU
+        uses: pantheongpu/setup-pantheonsim@ca87fe3143b29166822b923d6050945c5179408c # v0.1.5
+        with:
+          gpu: nvidia/h100
+
+      # The GPU tests skip with "no CUDA" or "no GPU" when there is no device,
+      # which would give a green run without testing anything, so the step fails
+      # on either message. The tests that need a model file on disk skip too (no
+      # model is available here) and are not counted.
+      - name: Run go test
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          vgpu run go test -count=1 -v ./... 2>&1 | tee "$RUNNER_TEMP/test.log"
+          if grep -E 'no CUDA|no GPU' "$RUNNER_TEMP/test.log"; then
+            echo "::error::a GPU test was skipped (no simulated GPU?)"
+            exit 1
+          fi
+          # backend/gpu has 7 tests; make sure they ran.
+          test "$(grep -c -E '^--- PASS: Test(RMSNorm|Softmax|Elementwise|RoPE|MatVec|MatVecQuant|AttnDecode) ' "$RUNNER_TEMP/test.log")" -eq 7
